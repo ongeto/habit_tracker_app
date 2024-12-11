@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+import '../providers/habit_provider.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final habitProvider = Provider.of<HabitProvider>(context);
+    final user = authProvider.user;
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -45,7 +52,7 @@ class ProfileScreen extends StatelessWidget {
                     radius: 40,
                     backgroundColor: Colors.grey[200],
                     child: Text(
-                      'JD',
+                      user?.name.substring(0, 2).toUpperCase() ?? 'U',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -54,17 +61,17 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'John Doe',
-                    style: TextStyle(
+                  Text(
+                    user?.name ?? 'User',
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'john.doe@example.com',
-                    style: TextStyle(
+                  Text(
+                    user?.email ?? 'email@example.com',
+                    style: const TextStyle(
                       color: Colors.grey,
                     ),
                   ),
@@ -77,22 +84,22 @@ class ProfileScreen extends StatelessWidget {
                       _buildStatItem(
                         context,
                         Icons.emoji_events,
-                        '10',
+                        habitProvider.habits.length.toString(),
                         'Habits',
                         Colors.amber,
                       ),
                       _buildStatItem(
                         context,
                         Icons.calendar_today,
-                        '30',
+                        '30', // TODO: Calculate total days
                         'Days',
                         Colors.blue,
                       ),
                       _buildStatItem(
                         context,
                         Icons.flash_on,
-                        '5',
-                        'Streaks',
+                        _calculateLongestStreak(habitProvider).toString(),
+                        'Best Streak',
                         Colors.green,
                       ),
                     ],
@@ -110,7 +117,12 @@ class ProfileScreen extends StatelessWidget {
                     context,
                     'Edit Profile',
                     Icons.edit,
-                    () {},
+                    () {
+                      // TODO: Implement edit profile
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Coming soon!')),
+                      );
+                    },
                   ),
                   const SizedBox(height: 16),
                   _buildActionButton(
@@ -124,25 +136,50 @@ class ProfileScreen extends StatelessWidget {
                     context,
                     'Settings',
                     Icons.settings,
-                    () {},
+                    () {
+                      // TODO: Implement settings
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Coming soon!')),
+                      );
+                    },
                   ),
                   const SizedBox(height: 16),
                   _buildActionButton(
                     context,
                     'Help & Support',
                     Icons.help_outline,
-                    () {},
+                    () {
+                      // TODO: Implement help & support
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Coming soon!')),
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
-                    onPressed: () {
-                      // TODO: Implement logout logic
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        '/login',
-                        (route) => false,
-                      );
-                    },
+                    onPressed: authProvider.isLoading
+                        ? null
+                        : () async {
+                            try {
+                              await authProvider.logout();
+                              if (context.mounted) {
+                                Navigator.pushNamedAndRemoveUntil(
+                                  context,
+                                  '/login',
+                                  (route) => false,
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error: ${e.toString()}'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red[400],
                       foregroundColor: Colors.white,
@@ -152,7 +189,18 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       minimumSize: const Size(double.infinity, 50),
                     ),
-                    child: const Text('Log Out'),
+                    child: authProvider.isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                        : const Text('Log Out'),
                   ),
                 ],
               ),
@@ -161,6 +209,12 @@ class ProfileScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  int _calculateLongestStreak(HabitProvider habitProvider) {
+    return habitProvider.habits.fold(0, (maxStreak, habit) {
+      return habit.currentStreak > maxStreak ? habit.currentStreak : maxStreak;
+    });
   }
 
   Widget _buildStatItem(

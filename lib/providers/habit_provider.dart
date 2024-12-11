@@ -86,4 +86,29 @@ class HabitProvider extends ChangeNotifier {
       rethrow;
     }
   }
+
+  Future<void> toggleHabitCompletionForDate(String id, DateTime date) async {
+    try {
+      final habitIndex = _habits.indexWhere((h) => h.id == id);
+      if (habitIndex == -1) return;
+
+      final habit = _habits[habitIndex];
+      final isCompleted = habit.completedDates.any((d) =>
+          d.year == date.year && d.month == date.month && d.day == date.day);
+
+      List<DateTime> newCompletedDates = [...habit.completedDates];
+      if (isCompleted) {
+        newCompletedDates.removeWhere((d) =>
+            d.year == date.year && d.month == date.month && d.day == date.day);
+      } else {
+        newCompletedDates.add(date);
+      }
+
+      final updatedHabit = habit.copyWith(completedDates: newCompletedDates);
+      await updateHabit(updatedHabit);
+    } catch (e) {
+      print('Error toggling habit completion for date: $e');
+      rethrow;
+    }
+  }
 } 
