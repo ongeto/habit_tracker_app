@@ -4,105 +4,249 @@ class CreateHabitScreen extends StatefulWidget {
   const CreateHabitScreen({super.key});
 
   @override
-  CreateHabitScreenState createState() => CreateHabitScreenState();
+  State<CreateHabitScreen> createState() => _CreateHabitScreenState();
 }
 
-class CreateHabitScreenState extends State<CreateHabitScreen> {
+class _CreateHabitScreenState extends State<CreateHabitScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _daysController = TextEditingController();
+  String _selectedCategory = '';
+  
+  // Reminder toggles
+  bool _morningReminder = false;
+  bool _afternoonReminder = false;
+  bool _eveningReminder = false;
 
-  String habitName = '';
-  String habitDescription = '';
-  String habitFrequency = 'Daily';
-  int targetDuration = 30;
-  TimeOfDay reminderTime = const TimeOfDay(hour: 8, minute: 0);
+  final List<String> _categories = ['Health', 'Family', 'Productivity', 'Personal', 'Social', 'Financial', 'Mental', 'Physical', 'Spiritual', 'Other'];
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _daysController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create New Habit')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Habit Name'),
-                onSaved: (value) {
-                  habitName = value!;
-                },
-              ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Habit Description'),
-                onSaved: (value) {
-                  habitDescription = value!;
-                },
-              ),
-              DropdownButtonFormField(
-                value: habitFrequency,
-                items: ['Daily', 'Weekly', 'Monthly']
-                    .map((label) => DropdownMenuItem(
-                          value: label,
-                          child: Text(label),
-                        ))
-                    .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    habitFrequency = value as String;
-                  });
-                },
-                decoration: const InputDecoration(labelText: 'Frequency'),
-              ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Target Duration'),
-                keyboardType: TextInputType.number,
-                onSaved: (value) {
-                  targetDuration = int.parse(value!);
-                },
-              ),
-              ListTile(
-                title: Text('Reminder Time: ${reminderTime.format(context)}'),
-                trailing: const Icon(Icons.access_time),
-                onTap: () async {
-                  TimeOfDay? picked = await showTimePicker(
-                    context: context,
-                    initialTime: reminderTime,
-                  );
-                  if (picked != null && picked != reminderTime) {
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+          color: Colors.black,
+        ),
+        title: Text(
+          'Create New Habit',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.primary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Habit Title',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(
+                    hintText: 'Enter a habit name',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a habit title';
+                    }
+                    return null;
+                  },
+                ),
+                
+                const SizedBox(height: 24),
+                const Text(
+                  'Description',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                    hintText: 'Briefly describe your habit',
+                  ),
+                  maxLines: 3,
+                  maxLength: 200,
+                ),
+                
+                const SizedBox(height: 24),
+                const Text(
+                  'Category',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: _selectedCategory.isEmpty ? null : _selectedCategory,
+                  decoration: const InputDecoration(
+                    hintText: 'Select Category',
+                  ),
+                  items: _categories.map((String category) {
+                    return DropdownMenuItem(
+                      value: category,
+                      child: Text(category),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
                     setState(() {
-                      reminderTime = picked;
+                      _selectedCategory = newValue!;
                     });
-                  }
-                },
-              ),
-              SwitchListTile(
-              title: const Text('Enable Motivation Tips'),
-              value: true,
-              onChanged: (bool value) {},
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please select a category';
+                    }
+                    return null;
+                  },
+                ),
+                
+                const SizedBox(height: 24),
+                const Text(
+                  'Target Days',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _daysController,
+                  decoration: const InputDecoration(
+                    hintText: 'Enter number of days',
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter target days';
+                    }
+                    if (int.tryParse(value) == null) {
+                      return 'Please enter a valid number';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Number of consecutive days to complete this habit',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
+                const Text(
+                  'Set Reminders',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                CheckboxListTile(
+                  value: _morningReminder,
+                  onChanged: (value) {
+                    setState(() {
+                      _morningReminder = value!;
+                    });
+                  },
+                  title: const Text('Morning (9:00 AM)'),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                CheckboxListTile(
+                  value: _afternoonReminder,
+                  onChanged: (value) {
+                    setState(() {
+                      _afternoonReminder = value!;
+                    });
+                  },
+                  title: const Text('Afternoon (3:00 PM)'),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                CheckboxListTile(
+                  value: _eveningReminder,
+                  onChanged: (value) {
+                    setState(() {
+                      _eveningReminder = value!;
+                    });
+                  },
+                  title: const Text('Evening (8:00 PM)'),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.emoji_events,
+                        color: Colors.amber[700],
+                      ),
+                      const SizedBox(width: 16),
+                      const Text('Earn 10 points per day for this habit'),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      // TODO: Implement habit creation logic
+                      Navigator.pop(context);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    minimumSize: const Size(double.infinity, 50),
+                  ),
+                  child: const Text('Create Habit'),
+                ),
+              ],
             ),
-            DropdownButtonFormField<String>(
-              decoration: const InputDecoration(labelText: 'Reward System'),
-              items: <String>['Points-based', 'Cheat-day based']
-                  .map((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
-              onChanged: (_) {},
-            ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    _formKey.currentState!.save();
-                    // Save habit details to the database or state management
-                    Navigator.of(context).pushNamed('/home');
-                  }
-                },
-                child: const Text('Save Habit'),
-              ),
-            ],
           ),
         ),
       ),
